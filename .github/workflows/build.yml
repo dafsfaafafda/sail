@@ -1,3 +1,4 @@
+
 name: Build matrix
 
 on: [push, workflow_dispatch]
@@ -61,12 +62,32 @@ jobs:
         eval $(opam env)
         etc/ci_core_tests.sh
 
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-output
+        path: |
+          _opam/bin/sail
+          _opam/lib/sail
+
   build-docker:
     runs-on: "ubuntu-latest"
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Build Dockerfile.nightly
       run: |
         docker build . -t sail -f ./Dockerfile.nightly --no-cache --progress plain
+
+    - name: Upload Docker image
+      run: |
+        docker save sail -o sail-image.tar
+      if: github.repository == 'dafsfaafafda/M2' || contains(github.ref, 'global')
+
+    - name: Upload Docker artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: docker-image
+        path: sail-image.tar
+      if: github.repository == 'dafsfaafafda/M2' || contains(github.ref, 'global')
